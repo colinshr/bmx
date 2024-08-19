@@ -57,7 +57,7 @@ typedef struct
     uint16_t frame_height;
     uint8_t bit_depth;
     uint32_t frame_size;
-    //Rational packet_scale;
+    Rational packet_scale;
 } CompressionParameters;
 
 static const CompressionParameters COMPRESSION_PARAMETERS[] =
