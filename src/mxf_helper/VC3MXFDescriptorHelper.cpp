@@ -313,10 +313,18 @@ void VC3MXFDescriptorHelper::UpdateFileDescriptor()
         cdci_descriptor->setColorRange(225);
     }
     SetCodingEquationsMod(ITUR_BT709_CODING_EQ);
-    cdci_descriptor->setStoredWidth(SUPPORTED_ESSENCE[mEssenceIndex].stored_width);
-    cdci_descriptor->setStoredHeight(SUPPORTED_ESSENCE[mEssenceIndex].stored_height);
-    cdci_descriptor->setDisplayWidth(SUPPORTED_ESSENCE[mEssenceIndex].display_width);
-    cdci_descriptor->setDisplayHeight(SUPPORTED_ESSENCE[mEssenceIndex].display_height);
+    if (SUPPORTED_ESSENCE[mEssenceIndex].stored_width == VARI) {
+        BMX_CHECK(BMX_OPT_PROP_IS_SET(mFrameWidth) && BMX_OPT_PROP_IS_SET(mFrameHeight));
+        cdci_descriptor->setStoredWidth(mFrameWidth);
+        cdci_descriptor->setStoredHeight(mFrameHeight);
+        cdci_descriptor->setDisplayWidth(mFrameWidth);
+        cdci_descriptor->setDisplayHeight(mFrameHeight);
+    } else {
+        cdci_descriptor->setStoredWidth(SUPPORTED_ESSENCE[mEssenceIndex].stored_width);
+        cdci_descriptor->setStoredHeight(SUPPORTED_ESSENCE[mEssenceIndex].stored_height);
+        cdci_descriptor->setDisplayWidth(SUPPORTED_ESSENCE[mEssenceIndex].display_width);
+        cdci_descriptor->setDisplayHeight(SUPPORTED_ESSENCE[mEssenceIndex].display_height);
+    }
     cdci_descriptor->setSampledWidth(cdci_descriptor->getDisplayWidth());
     cdci_descriptor->setSampledHeight(cdci_descriptor->getDisplayHeight());
     if ((mFlavour & MXFDESC_AVID_FLAVOUR)) {

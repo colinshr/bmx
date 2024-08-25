@@ -2066,6 +2066,23 @@ int main(int argc, const char** argv)
             cmdln_index++;
             continue; // skip input reset at the end
         }
+        else if (strcmp(argv[cmdln_index], "--width") == 0)
+        {
+            if (cmdln_index + 1 >= argc)
+            {
+                usage_ref(argv[0]);
+                fprintf(stderr, "Missing argument for option '%s'\n", argv[cmdln_index]);
+                return 1;
+            }
+            if (!parse_int(argv[cmdln_index + 1], &value) || value == 0) {
+                usage_ref(argv[0]);
+                fprintf(stderr, "Invalid value '%s' for Option '%s'\n", argv[cmdln_index + 1], argv[cmdln_index]);
+                return 1;
+            }
+            input.input_width = uvalue;
+            cmdln_index++;
+            continue; // skip input reset at the end
+        }
         else if (strcmp(argv[cmdln_index], "--height") == 0)
         {
             if (cmdln_index + 1 >= argc)
