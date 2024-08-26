@@ -42,9 +42,7 @@
 using namespace std;
 using namespace bmx;
 
-// XXX: sync file better
-#define HEADER_PREFIX_HVN0  0x000000028000LL
-#define HEADER_PREFIX_S     0x000002800000LL
+
 #define VC3_MIN_HEADER_SIZE     0x280
 #define VC3_OFFSETS_START       0x168
 #define VARIABLE                0
@@ -62,34 +60,20 @@ typedef struct
 
 static const CompressionParameters COMPRESSION_PARAMETERS[] =
 {
-    {1235,  true,   1920,   1080,   10,  917504},
-    {1237,  true,   1920,   1080,   8,   606208},
-    {1238,  true,   1920,   1080,   8,   917504},
-    {1241,  false,  1920,   1080,   10,  917504},
-    {1242,  false,  1920,   1080,   8,   606208},
-    {1243,  false,  1920,   1080,   8,   917504},
-    {1244,  false,  1920,   1080,   8,   606208},
-    {1250,  true,   1280,   720,    10,  458752},
-    {1251,  true,   1280,   720,    8,   458752},
-    {1252,  true,   1280,   720,    8,   303104},
-    {1253,  true,   1920,   1080,   8,   188416},
-    {1258,  true,   1280,   720,    8,   212992},
-    {1259,  true,   1920,   1080,   8,   417792},
-    {1260,  false,  1920,   1080,   8,   417792},
-    /* {1235,  true,   1920,     1080,     10,  917504,   ZERO_RATIONAL}, */
-    /* {1237,  true,   1920,     1080,     8,   606208,   ZERO_RATIONAL}, */
-    /* {1238,  true,   1920,     1080,     8,   917504,   ZERO_RATIONAL}, */
-    /* {1241,  false,  1920,     1080,     10,  917504,   ZERO_RATIONAL}, */
-    /* {1242,  false,  1920,     1080,     8,   606208,   ZERO_RATIONAL}, */
-    /* {1243,  false,  1920,     1080,     8,   917504,   ZERO_RATIONAL}, */
-    /* {1244,  false,  1920,     1080,     8,   606208,   ZERO_RATIONAL}, */
-    /* {1250,  true,   1280,     720,      10,  458752,   ZERO_RATIONAL}, */
-    /* {1251,  true,   1280,     720,      8,   458752,   ZERO_RATIONAL}, */
-    /* {1252,  true,   1280,     720,      8,   303104,   ZERO_RATIONAL}, */
-    /* {1253,  true,   1920,     1080,     8,   188416,   ZERO_RATIONAL}, */
-    /* {1258,  true,   1280,     720,      8,   212992,   ZERO_RATIONAL}, */
-    /* {1259,  true,   1920,     1080,     8,   417792,   ZERO_RATIONAL}, */
-    /* {1260,  false,  1920,     1080,     8,   417792,   ZERO_RATIONAL}, */
+    {1235,  true,   1920,     1080,     10,  917504,   ZERO_RATIONAL},
+    {1237,  true,   1920,     1080,     8,   606208,   ZERO_RATIONAL},
+    {1238,  true,   1920,     1080,     8,   917504,   ZERO_RATIONAL},
+    {1241,  false,  1920,     1080,     10,  917504,   ZERO_RATIONAL},
+    {1242,  false,  1920,     1080,     8,   606208,   ZERO_RATIONAL},
+    {1243,  false,  1920,     1080,     8,   917504,   ZERO_RATIONAL},
+    {1244,  false,  1920,     1080,     8,   606208,   ZERO_RATIONAL},
+    {1250,  true,   1280,     720,      10,  458752,   ZERO_RATIONAL},
+    {1251,  true,   1280,     720,      8,   458752,   ZERO_RATIONAL},
+    {1252,  true,   1280,     720,      8,   303104,   ZERO_RATIONAL},
+    {1253,  true,   1920,     1080,     8,   188416,   ZERO_RATIONAL},
+    {1258,  true,   1280,     720,      8,   212992,   ZERO_RATIONAL},
+    {1259,  true,   1920,     1080,     8,   417792,   ZERO_RATIONAL},
+    {1260,  false,  1920,     1080,     8,   417792,   ZERO_RATIONAL},
     {1270,  false,  VARIABLE, VARIABLE, 12,  VARIABLE, {0xe000, 0xff}},  // DNxHR 444 12-bit
     {1271,  false,  VARIABLE, VARIABLE, 12,  VARIABLE, {0x7000, 0xff}},  // DNxHR HQX 12-bit
     {1272,  false,  VARIABLE, VARIABLE, 8,   VARIABLE, {0x7000, 0xff}},  // DNxHR HQ
@@ -105,18 +89,6 @@ static uint32_t get_hr_frame_size(CompressionParameters const& cp, uint32_t w, u
     uint32_t result = ((w + 15) / 16) * ((h + 15) / 16) * cp.packet_scale.numerator / cp.packet_scale.denominator;
     result = (result + 2048) & ~0xFFF;
     return max(result, (uint32_t)8192);
-}
-
-static uint64_t get_uint64(const unsigned char *data)
-{
-    return (((uint64_t)data[0]) << 56) |
-           (((uint64_t)data[1]) << 48) |
-           (((uint64_t)data[2]) << 40) |
-           (((uint64_t)data[3]) << 32) |
-           (((uint64_t)data[4]) << 24) |
-           (((uint64_t)data[5]) << 16) |
-           (((uint64_t)data[6]) << 8) |
-             (uint64_t)data[7];
 }
 
 static uint32_t get_uint32(const unsigned char *data)
@@ -191,160 +163,63 @@ VC3EssenceParser::~VC3EssenceParser()
 {
 }
 
-/* uint32_t VC3EssenceParser::ParseFrameStart(const unsigned char *data, uint32_t data_size) */
-/* { */
-/*     BMX_CHECK(data_size != ESSENCE_PARSER_NULL_OFFSET); */
-
-/*     for (uint32_t i = 0; i < data_size; i++) { */
-/*         if (vc3_is_header(data + i, data_size - i) && */
-/*             vc3_get_interlaced(data + i) < 3)   // coding unit is progressive frame or field 1 */
-/*         { */
-/*             return i; */
-/*         } */
-/*     } */
-
-/*     return ESSENCE_PARSER_NULL_OFFSET; */
-/* } */
-
 uint32_t VC3EssenceParser::ParseFrameStart(const unsigned char *data, uint32_t data_size)
 {
     BMX_CHECK(data_size != ESSENCE_PARSER_NULL_OFFSET);
 
-    uint64_t state = 0;
-    uint32_t i;
-    for (i = 0; i < data_size; i++) {
-        state = (state << 8) | data[i];
-        if ((state & 0xffffffff0000LL) == HEADER_PREFIX_S &&
-            (state & 0x000000000003LL) < 3)    // coding unit is progressive frame or field 1
+    for (uint32_t i = 0; i < data_size; i++) {
+        if (vc3_is_header(data + i, data_size - i) &&
+            vc3_get_interlaced(data + i) < 3)   // coding unit is progressive frame or field 1
         {
-            return i - 5;
+            return i;
         }
     }
 
     return ESSENCE_PARSER_NULL_OFFSET;
 }
 
-/* uint32_t VC3EssenceParser::ParseFrameSize(const unsigned char *data, uint32_t data_size) */
-/* { */
-/*     BMX_CHECK(data_size != ESSENCE_PARSER_NULL_OFFSET); */
-
-/*     if (data_size < VC3_MIN_HEADER_SIZE) */
-/*         return ESSENCE_PARSER_NULL_OFFSET; */
-
-/*     // check header */
-/*     BMX_CHECK(vc3_is_header(data, data_size)); */
-
-/*     uint32_t compression_id = vc3_get_compression_id(data); */
-
-/*     for (size_t i = 0; i < BMX_ARRAY_SIZE(COMPRESSION_PARAMETERS); i++) */
-/*     { */
-/*         if (compression_id == COMPRESSION_PARAMETERS[i].compression_id) { */
-/*             uint32_t frame_size = COMPRESSION_PARAMETERS[i].frame_size; */
-
-/*             if (frame_size == VARIABLE) */
-/*             { */
-/*                 uint32_t w = vc3_get_width(data); */
-/*                 uint32_t h = vc3_get_height(data); */
-/*                 frame_size = get_hr_frame_size(COMPRESSION_PARAMETERS[i], w, h); */
-/*             } */
-
-/*             if (data_size >= frame_size) */
-/*                 return frame_size; */
-/*             else */
-/*                 return ESSENCE_PARSER_NULL_OFFSET; */
-/*         } */
-/*     } */
-
-/*     return ESSENCE_PARSER_NULL_FRAME_SIZE; */
-/* } */
-
 uint32_t VC3EssenceParser::ParseFrameSize(const unsigned char *data, uint32_t data_size)
 {
     BMX_CHECK(data_size != ESSENCE_PARSER_NULL_OFFSET);
 
-    if (data_size < VC3_PARSER_MIN_DATA_SIZE)
+    if (data_size < VC3_MIN_HEADER_SIZE)
         return ESSENCE_PARSER_NULL_OFFSET;
 
-    // check header prefix
-    uint64_t prefix = get_uint64(data) >> 24;
-    BMX_CHECK( (prefix & 0xffffffff00LL) == HEADER_PREFIX_HVN0 &&
-              ((prefix & 0x00000000ffLL) == 1 || (prefix & 0x00000000ffLL) == 2));
+    // check header
+    BMX_CHECK(vc3_is_header(data, data_size));
 
-    uint32_t compression_id = get_uint32(data + 40);
+    uint32_t compression_id = vc3_get_compression_id(data);
 
-    size_t i;
-    for (i = 0; i < BMX_ARRAY_SIZE(COMPRESSION_PARAMETERS); i++)
+    for (size_t i = 0; i < BMX_ARRAY_SIZE(COMPRESSION_PARAMETERS); i++)
     {
-        if (compression_id == COMPRESSION_PARAMETERS[i].compression_id)
-            return COMPRESSION_PARAMETERS[i].frame_size;
+        if (compression_id == COMPRESSION_PARAMETERS[i].compression_id) {
+            uint32_t frame_size = COMPRESSION_PARAMETERS[i].frame_size;
+
+            if (frame_size == VARIABLE)
+            {
+                uint32_t w = vc3_get_width(data);
+                uint32_t h = vc3_get_height(data);
+                frame_size = get_hr_frame_size(COMPRESSION_PARAMETERS[i], w, h);
+            }
+
+            if (data_size >= frame_size)
+                return frame_size;
+            else
+                return ESSENCE_PARSER_NULL_OFFSET;
+        }
     }
 
     return ESSENCE_PARSER_NULL_FRAME_SIZE;
 }
 
-/* void VC3EssenceParser::ParseFrameInfo(const unsigned char *data, uint32_t data_size) */
-/* { */
-/*     BMX_CHECK(data_size != ESSENCE_PARSER_NULL_OFFSET); */
-/*     BMX_CHECK(data_size >= VC3_MIN_HEADER_SIZE); */
-/*     BMX_CHECK(vc3_is_header(data, data_size)); */
-
-/*     // compression id */
-/*     mCompressionId = vc3_get_compression_id(data); */
-/*     size_t param_index; */
-/*     for (param_index = 0; param_index < BMX_ARRAY_SIZE(COMPRESSION_PARAMETERS); param_index++) */
-/*     { */
-/*         if (mCompressionId == COMPRESSION_PARAMETERS[param_index].compression_id) */
-/*             break; */
-/*     } */
-/*     BMX_CHECK(param_index < BMX_ARRAY_SIZE(COMPRESSION_PARAMETERS)); */
-
-/*     CompressionParameters const& cp = COMPRESSION_PARAMETERS[param_index]; */
-
-/*     // Note: found that an Avid MC v3.0 file containing 1252 720p50 had FFC=01h and SST=1; */
-/*     //       SST should be 0 for progressive scan. DNxHD_Compliance_Issue_To_Licensees-1.doc */
-/*     //       states that some Avid bitstreams may have SST incorrectly set to 1080i */
-/*     //       Ignore the bitstream information and use the scan type associated with the compression id */
-/*     mIsProgressive = cp.is_progressive; */
-
-/*     // image geometry */
-/*     mFrameWidth = vc3_get_width(data); */
-/*     mFrameHeight = vc3_get_height(data); */
-
-/*     // Note: DNxHD_Compliance_Issue_To_Licensees-1.doc states that some Avid bitstreams, */
-/*     //       e.g. produced by Avid Media Composer 3.0, may have ALPF incorrectly set to 1080 for */
-/*     //       1080i sources. Ignore the bitstream information and use the frame height associated */
-/*     //       with the compression id */
-/*     if (cp.frame_height != VARIABLE) { */
-/*         mFrameHeight = cp.frame_height; */
-/*     } */
-
-/*     uint32_t sbd_bits = get_bits(data, data_size, 33 * 8, 3); */
-/*     BMX_CHECK(sbd_bits == 2 || sbd_bits == 1); */
-/*     mBitDepth = (sbd_bits == 2 ? 10 : 8); */
-/*     BMX_CHECK(mBitDepth == COMPRESSION_PARAMETERS[param_index].bit_depth); */
-
-/*     if (cp.frame_size == VARIABLE) { */
-/*         mFrameSize = get_hr_frame_size(cp, mFrameWidth, mFrameHeight); */
-/*     } else { */
-/*         mFrameSize = cp.frame_size; */
-/*     } */
-
-/*     BMX_CHECK(cp.frame_width == VARIABLE || mFrameWidth == cp.frame_width); */
-/*     BMX_CHECK(mBitDepth >= 8 && mBitDepth <= cp.bit_depth); */
-/* } */
-
 void VC3EssenceParser::ParseFrameInfo(const unsigned char *data, uint32_t data_size)
 {
     BMX_CHECK(data_size != ESSENCE_PARSER_NULL_OFFSET);
-    BMX_CHECK(data_size >= VC3_PARSER_MIN_DATA_SIZE);
-
-    // check header prefix
-    uint64_t prefix = get_uint64(data) >> 24;
-    BMX_CHECK( (prefix & 0xffffffff00LL) == HEADER_PREFIX_HVN0 &&
-              ((prefix & 0x00000000ffLL) == 1 || (prefix & 0x00000000ffLL) == 2));
+    BMX_CHECK(data_size >= VC3_MIN_HEADER_SIZE);
+    BMX_CHECK(vc3_is_header(data, data_size));
 
     // compression id
-    mCompressionId = get_uint32(data + 40);
+    mCompressionId = vc3_get_compression_id(data);
     size_t param_index;
     for (param_index = 0; param_index < BMX_ARRAY_SIZE(COMPRESSION_PARAMETERS); param_index++)
     {
@@ -353,25 +228,37 @@ void VC3EssenceParser::ParseFrameInfo(const unsigned char *data, uint32_t data_s
     }
     BMX_CHECK(param_index < BMX_ARRAY_SIZE(COMPRESSION_PARAMETERS));
 
+    CompressionParameters const& cp = COMPRESSION_PARAMETERS[param_index];
+
     // Note: found that an Avid MC v3.0 file containing 1252 720p50 had FFC=01h and SST=1;
     //       SST should be 0 for progressive scan. DNxHD_Compliance_Issue_To_Licensees-1.doc
     //       states that some Avid bitstreams may have SST incorrectly set to 1080i
     //       Ignore the bitstream information and use the scan type associated with the compression id
-    mIsProgressive = COMPRESSION_PARAMETERS[param_index].is_progressive;
+    mIsProgressive = cp.is_progressive;
 
     // image geometry
+    mFrameWidth = vc3_get_width(data);
+    mFrameHeight = vc3_get_height(data);
+
     // Note: DNxHD_Compliance_Issue_To_Licensees-1.doc states that some Avid bitstreams,
     //       e.g. produced by Avid Media Composer 3.0, may have ALPF incorrectly set to 1080 for
     //       1080i sources. Ignore the bitstream information and use the frame height associated
     //       with the compression id
-    mFrameHeight = COMPRESSION_PARAMETERS[param_index].frame_height;
-    mFrameWidth = get_uint16(data + 26);
-    BMX_CHECK(mFrameWidth == COMPRESSION_PARAMETERS[param_index].frame_width);
+    if (cp.frame_height != VARIABLE) {
+        mFrameHeight = cp.frame_height;
+    }
+
     uint32_t sbd_bits = get_bits(data, data_size, 33 * 8, 3);
     BMX_CHECK(sbd_bits == 2 || sbd_bits == 1);
     mBitDepth = (sbd_bits == 2 ? 10 : 8);
-    BMX_CHECK(mBitDepth == COMPRESSION_PARAMETERS[param_index].bit_depth);
 
-    mFrameSize = COMPRESSION_PARAMETERS[param_index].frame_size;
+    if (cp.frame_size == VARIABLE) {
+        mFrameSize = get_hr_frame_size(cp, mFrameWidth, mFrameHeight);
+    } else {
+        mFrameSize = cp.frame_size;
+    }
+
+    BMX_CHECK(cp.frame_width == VARIABLE || mFrameWidth == cp.frame_width);
+    BMX_CHECK(mBitDepth >= 8 && mBitDepth <= cp.bit_depth);
 }
 

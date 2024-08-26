@@ -222,6 +222,11 @@ static const mxfKey MXF_EE_K(DNxHD) = MXF_AVID_EE_K(0x15, 0x01, 0x06, 0x01);
 
 #define MXF_DNXHD_PICT_TRACK_NUM  MXF_TRACK_NUM(0x15, 0x01, 0x06, 0x01)
 
+// XXX: move DNxHR defines to here
+static const mxfKey MXF_EE_K(DNxHR) = MXF_AVID_EE_K(0x15, 0x01, 0x06, 0x01);
+
+#define MXF_DNXHR_PICT_TRACK_NUM  MXF_TRACK_NUM(0x15, 0x01, 0x06, 0x01)
+
 
 /* IMX 30/40/50 */
 

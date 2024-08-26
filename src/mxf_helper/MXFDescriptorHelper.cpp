@@ -159,10 +159,18 @@ void MXFDescriptorHelper::SetFlavour(int flavour)
 
 void MXFDescriptorHelper::UpdateFileDescriptor()
 {
+    // XXX: set essence according to the type
     if ((mFlavour & MXFDESC_AVID_FLAVOUR)) {
         // replace essence container label with generic AAF-KLV (aka MXF) label
         mFileDescriptor->setEssenceContainer(MXF_EC_L(AvidAAFKLVEssenceContainer));
     } else {
+        /* mxfUL x = ChooseEssenceContainerUL(); */
+        /* printf("MXFDescriptorHelper: "); */
+        /* for(int i = 0; i < sizeof(x); i++) */
+        /* { */
+        /*   printf("0x%02x ",((uint8_t*)&x)[i]); */
+        /* } */
+        /* printf("\n"); */
         mFileDescriptor->setEssenceContainer(ChooseEssenceContainerUL());
     }
     mFileDescriptor->setSampleRate(mSampleRate);
